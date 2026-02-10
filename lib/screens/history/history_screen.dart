@@ -40,43 +40,45 @@ class HistoryScreen extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: scans.length,
-      itemBuilder: (context, index) {
-        final scan = scans[index];
-        return _HistoryCard(
-          scan: scan,
-          onTap: () {
-            // Load this scan into the scan provider and navigate to results
-            ref.read(scanProvider.notifier).reset();
-            // Re-create the scan state by pushing to results with this scan loaded
-            _loadScanAndNavigate(context, ref, scan);
-          },
-          onDelete: () async {
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete scan?'),
-                content: const Text('This cannot be undone.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
-                  ),
-                ],
-              ),
-            );
-            if (confirm == true) {
-              ref.read(historyProvider.notifier).deleteScan(scan.id);
-            }
-          },
-        );
-      },
+    return SafeArea(
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: scans.length,
+        itemBuilder: (context, index) {
+          final scan = scans[index];
+          return _HistoryCard(
+            scan: scan,
+            onTap: () {
+              // Load this scan into the scan provider and navigate to results
+              ref.read(scanProvider.notifier).reset();
+              // Re-create the scan state by pushing to results with this scan loaded
+              _loadScanAndNavigate(context, ref, scan);
+            },
+            onDelete: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete scan?'),
+                  content: const Text('This cannot be undone.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                ref.read(historyProvider.notifier).deleteScan(scan.id);
+              }
+            },
+          );
+        },
+      ),
     );
   }
 

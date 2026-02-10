@@ -222,6 +222,7 @@ class _AllergenSeverityTile extends StatelessWidget {
                     segments: Severity.values
                         .map((s) => ButtonSegment(
                               value: s,
+                              icon: null,
                               label: Text(
                                 s.label,
                                 style: const TextStyle(fontSize: 12),
@@ -230,6 +231,7 @@ class _AllergenSeverityTile extends StatelessWidget {
                         .toList(),
                     selected: {allergen.severity},
                     onSelectionChanged: (set) => onSeverityChanged(set.first),
+                    showSelectedIcon: false,
                     style: ButtonStyle(
                       visualDensity: VisualDensity.compact,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
