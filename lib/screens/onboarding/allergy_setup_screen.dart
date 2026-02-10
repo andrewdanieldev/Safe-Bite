@@ -222,7 +222,6 @@ class _AllergenSeverityTile extends StatelessWidget {
                     segments: Severity.values
                         .map((s) => ButtonSegment(
                               value: s,
-                              icon: null,
                               label: Text(
                                 s.label,
                                 style: const TextStyle(fontSize: 12),
