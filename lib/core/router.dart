@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/onboarding/allergy_setup_screen.dart';
 import '../screens/scan/camera_screen.dart';
@@ -6,6 +7,7 @@ import '../screens/scan/results_screen.dart';
 import '../screens/detail/item_detail_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/profile/emergency_card_screen.dart';
 import '../screens/home_screen.dart';
 import '../services/storage_service.dart';
 
@@ -43,10 +45,22 @@ GoRouter createRouter(StorageService storage) {
         builder: (context, state) => const ResultsScreen(),
       ),
       GoRoute(
+        path: '/emergency-card',
+        builder: (context, state) => const EmergencyCardScreen(),
+      ),
+      GoRoute(
         path: '/detail/:index',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final index = int.parse(state.pathParameters['index']!);
-          return ItemDetailScreen(itemIndex: index);
+          return CustomTransitionPage(
+            child: ItemDetailScreen(itemIndex: index),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          );
         },
       ),
     ],

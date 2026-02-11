@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/allergen.dart';
+import '../models/menu_item_result.dart';
 import '../models/scan_result.dart';
 import '../services/llm_service.dart';
 import '../services/ocr_service.dart';
+import '../services/image_service.dart';
 import '../services/storage_service.dart';
 import 'allergy_profile_provider.dart';
 
@@ -51,6 +53,7 @@ final scanProvider =
   return ScanNotifier(
     ocrService: OcrService(),
     llmService: LlmService(),
+    imageService: ImageService(),
     storage: ref.read(storageServiceProvider),
     allergens: ref.read(allergyProfileProvider),
   );
@@ -59,12 +62,14 @@ final scanProvider =
 class ScanNotifier extends StateNotifier<ScanState> {
   final OcrService ocrService;
   final LlmService llmService;
+  final ImageService imageService;
   final StorageService storage;
   final List<Allergen> allergens;
 
   ScanNotifier({
     required this.ocrService,
     required this.llmService,
+    required this.imageService,
     required this.storage,
     required this.allergens,
   }) : super(const ScanState());
@@ -94,15 +99,19 @@ class ScanNotifier extends StateNotifier<ScanState> {
     if (state.imagePaths.isEmpty) return;
 
     try {
-      // Step 1: OCR
+      // Step 0: Preprocess images
       state = state.copyWith(
         status: ScanStatus.extracting,
-        statusMessage: 'Reading menu text...',
+        statusMessage: 'Enhancing image quality...',
         error: null,
       );
 
+      final processedPaths = await imageService.preprocessMultiple(state.imagePaths);
+
+      // Step 1: OCR (use processed paths)
+      state = state.copyWith(statusMessage: 'Reading menu text...');
       final ocrText =
-          await ocrService.extractTextFromMultipleImages(state.imagePaths);
+          await ocrService.extractTextFromMultipleImages(processedPaths);
 
       if (ocrText.trim().isEmpty) {
         state = state.copyWith(
@@ -113,17 +122,33 @@ class ScanNotifier extends StateNotifier<ScanState> {
         return;
       }
 
+      // Step 2: LLM Analysis (streaming)
       state = state.copyWith(
         rawOcrText: ocrText,
         statusMessage: 'Analyzing ingredients...',
         status: ScanStatus.analyzing,
       );
 
-      // Step 2: LLM Analysis
-      final items = await llmService.analyzeMenu(
+      List<MenuItemResult>? items;
+      await for (final update in llmService.analyzeMenuWithFallback(
         ocrText: ocrText,
         allergens: allergens,
-      );
+      )) {
+        if (update.fallbackMessage != null) {
+          state = state.copyWith(statusMessage: update.fallbackMessage);
+        }
+        if (update.isComplete && update.items != null) {
+          items = update.items;
+        }
+      }
+
+      if (items == null || items.isEmpty) {
+        state = state.copyWith(
+          status: ScanStatus.error,
+          error: 'Could not analyze the menu. Please try again.',
+        );
+        return;
+      }
 
       // Step 3: Build result
       final scanResult = ScanResult(

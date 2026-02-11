@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 import '../../providers/scan_provider.dart';
 
 class ProcessingScreen extends ConsumerWidget {
@@ -50,10 +51,12 @@ class ProcessingScreen extends ConsumerWidget {
                   child: const Text('Try Again'),
                 ),
               ] else ...[
-                const SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: CircularProgressIndicator(strokeWidth: 3),
+                Lottie.asset(
+                  'assets/animations/scanning.json',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                  repeat: true,
                 ),
                 const SizedBox(height: 32),
                 Text(

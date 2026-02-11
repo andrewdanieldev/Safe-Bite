@@ -9,6 +9,10 @@ abstract class Constants {
   static const anthropicVersion = '2023-06-01';
   static const llmModel = 'claude-sonnet-4-5-20250929';
   static const llmMaxTokens = 4096;
+  static const llmFallbackModel = 'claude-haiku-4-5-20251001';
+  static const llmFallbackMaxTokens = 4096;
+  static const llmTimeoutSeconds = 45;
+  static const llmFallbackTimeoutSeconds = 30;
 
   static const appName = 'SafeBite';
   static const disclaimerText =

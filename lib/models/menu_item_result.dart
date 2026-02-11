@@ -37,6 +37,11 @@ class MenuItemResult {
   @JsonKey(name: 'waiter_question')
   final String waiterQuestion;
 
+  final int confidence; // 0-100 percentage
+
+  @JsonKey(name: 'substitution_suggestions')
+  final List<String> substitutionSuggestions;
+
   const MenuItemResult({
     required this.name,
     this.description,
@@ -46,6 +51,8 @@ class MenuItemResult {
     this.possibleAllergens = const [],
     this.explanation = '',
     this.waiterQuestion = '',
+    this.confidence = 0,
+    this.substitutionSuggestions = const [],
   });
 
   factory MenuItemResult.fromJson(Map<String, dynamic> json) =>

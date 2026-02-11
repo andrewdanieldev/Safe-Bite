@@ -19,6 +19,18 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (allergens.isNotEmpty) ...[
+            FilledButton.icon(
+              onPressed: () => context.push('/emergency-card'),
+              icon: const Icon(Icons.medical_services),
+              label: const Text('Show Emergency Card'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.dangerColor,
+                minimumSize: const Size(double.infinity, 52),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
           Text(
             'Your Allergens',
             style: theme.textTheme.titleMedium?.copyWith(

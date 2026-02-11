@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme.dart';
 import '../../models/menu_item_result.dart';
 import '../../models/scan_result.dart';
 import '../../providers/scan_provider.dart';
 import '../../widgets/risk_badge.dart';
+import '../../widgets/shareable_results.dart';
 
 class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
@@ -22,6 +28,19 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final scanState = ref.watch(scanProvider);
     final result = scanState.result;
     final theme = Theme.of(context);
+
+    ref.listen(scanProvider, (previous, next) {
+      if (previous?.status != ScanStatus.complete && next.status == ScanStatus.complete) {
+        final result = next.result;
+        if (result != null && result.dangerCount > 0) {
+          HapticFeedback.heavyImpact();
+        } else if (result != null && result.cautionCount > 0) {
+          HapticFeedback.mediumImpact();
+        } else {
+          HapticFeedback.lightImpact();
+        }
+      }
+    });
 
     if (result == null) {
       return Scaffold(
@@ -45,6 +64,13 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
             context.go('/scan');
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share results',
+            onPressed: () => _shareResults(context, ref),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -66,6 +92,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       final originalIndex = items.indexOf(item);
                       return _MenuItemCard(
                         item: item,
+                        index: originalIndex,
                         onTap: () =>
                             context.push('/detail/$originalIndex'),
                       );
@@ -82,6 +109,30 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         icon: const Icon(Icons.camera_alt),
         label: const Text('Scan Another'),
       ),
+    );
+  }
+
+  Future<void> _shareResults(BuildContext context, WidgetRef ref) async {
+    final scanState = ref.read(scanProvider);
+    final result = scanState.result;
+    if (result == null) return;
+
+    final screenshotController = ScreenshotController();
+
+    final imageBytes = await screenshotController.captureFromWidget(
+      ShareableResults(result: result),
+      pixelRatio: 3.0,
+      context: context,
+    );
+
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/safebite_results.png');
+    await file.writeAsBytes(imageBytes);
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'My SafeBite scan: ${result.safeCount} safe, '
+          '${result.cautionCount} caution, ${result.dangerCount} danger items',
     );
   }
 
@@ -179,9 +230,14 @@ class _SummaryChip extends StatelessWidget {
 
 class _MenuItemCard extends StatelessWidget {
   final MenuItemResult item;
+  final int index;
   final VoidCallback onTap;
 
-  const _MenuItemCard({required this.item, required this.onTap});
+  const _MenuItemCard({
+    required this.item,
+    required this.index,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -211,16 +267,32 @@ class _MenuItemCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              item.name,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
+                            child: Hero(
+                              tag: 'item_$index',
+                              child: Material(
+                                color: Colors.transparent,
+                                child: Text(
+                                  item.name,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                           RiskBadge(level: item.riskLevel),
                         ],
                       ),
+                      if (item.confidence > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${item.confidence}% confidence',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _confidenceColor(item.confidence),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       if (item.description != null &&
                           item.description!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -273,5 +345,11 @@ class _MenuItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _confidenceColor(int confidence) {
+    if (confidence >= 90) return AppTheme.safeColor;
+    if (confidence >= 70) return AppTheme.cautionColor;
+    return AppTheme.dangerColor;
   }
 }

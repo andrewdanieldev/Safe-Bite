@@ -23,10 +23,27 @@ dependencies:
   intl: ^0.20.2
   path_provider: ^2.1.5
 
+  # V2: Streaming & sharing
+  share_plus: ^10.1.2
+  screenshot: ^3.0.0
+
+  # V2: Animations
+  lottie: ^3.1.3
+
+  # V2: Image preprocessing
+  image: ^4.0.17
+
+  # V2: Splash screen
+  flutter_native_splash: ^2.4.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+
+  # V2: Testing
+  mockito: ^5.4.4
+  build_runner: ^2.4.0
 
 flutter:
   uses-material-design: true

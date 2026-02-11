@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../models/menu_item_result.dart';
 import '../../providers/scan_provider.dart';
 import '../../widgets/risk_badge.dart';
 
@@ -26,6 +27,12 @@ class ItemDetailScreen extends ConsumerWidget {
 
     final item = items[itemIndex];
 
+    if (item.riskLevel == RiskLevel.danger) {
+      HapticFeedback.heavyImpact();
+    } else if (item.riskLevel == RiskLevel.caution) {
+      HapticFeedback.mediumImpact();
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(item.name)),
       body: SingleChildScrollView(
@@ -35,13 +42,38 @@ class ItemDetailScreen extends ConsumerWidget {
           children: [
             // Risk badge
             Center(child: RiskBadge(level: item.riskLevel, large: true)),
-            const SizedBox(height: 20),
+            if (item.confidence > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.analytics_outlined, size: 16, color: _confidenceColor(item.confidence)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${item.confidence}% confidence',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: _confidenceColor(item.confidence),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ] else ...[
+              const SizedBox(height: 20),
+            ],
 
             // Item name and description
-            Text(
-              item.name,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+            Hero(
+              tag: 'item_$itemIndex',
+              child: Material(
+                color: Colors.transparent,
+                child: Text(
+                  item.name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             if (item.description != null && item.description!.isNotEmpty) ...[
@@ -125,6 +157,46 @@ class ItemDetailScreen extends ConsumerWidget {
               ),
             ],
 
+            // Substitution suggestions
+            if (item.substitutionSuggestions.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: AppTheme.safeBg,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.lightbulb_outline, size: 20, color: AppTheme.safeColor),
+                          const SizedBox(width: 8),
+                          Text(
+                            'How to Make It Safer',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.safeColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...item.substitutionSuggestions.map((suggestion) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('  \u2022  '),
+                            Expanded(child: Text(suggestion, style: theme.textTheme.bodyMedium)),
+                          ],
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
             // Disclaimer
             const SizedBox(height: 24),
             Container(
@@ -157,6 +229,12 @@ class ItemDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Color _confidenceColor(int confidence) {
+    if (confidence >= 90) return AppTheme.safeColor;
+    if (confidence >= 70) return AppTheme.cautionColor;
+    return AppTheme.dangerColor;
   }
 }
 

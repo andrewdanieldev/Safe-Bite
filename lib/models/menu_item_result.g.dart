@@ -25,6 +25,12 @@ MenuItemResult _$MenuItemResultFromJson(Map<String, dynamic> json) =>
           const [],
       explanation: json['explanation'] as String? ?? '',
       waiterQuestion: json['waiter_question'] as String? ?? '',
+      confidence: (json['confidence'] as num?)?.toInt() ?? 0,
+      substitutionSuggestions:
+          (json['substitution_suggestions'] as List<dynamic>?)
+                  ?.map((e) => e as String)
+                  .toList() ??
+              const [],
     );
 
 Map<String, dynamic> _$MenuItemResultToJson(MenuItemResult instance) =>
@@ -37,4 +43,6 @@ Map<String, dynamic> _$MenuItemResultToJson(MenuItemResult instance) =>
       'possible_allergens': instance.possibleAllergens,
       'explanation': instance.explanation,
       'waiter_question': instance.waiterQuestion,
+      'confidence': instance.confidence,
+      'substitution_suggestions': instance.substitutionSuggestions,
     };
