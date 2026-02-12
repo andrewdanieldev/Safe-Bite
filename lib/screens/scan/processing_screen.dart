@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import '../../providers/history_provider.dart';
 import '../../providers/scan_provider.dart';
 
 class ProcessingScreen extends ConsumerWidget {
@@ -12,9 +13,10 @@ class ProcessingScreen extends ConsumerWidget {
     final scanState = ref.watch(scanProvider);
     final theme = Theme.of(context);
 
-    // Navigate to results when complete
+    // Navigate to results when complete; refresh history so the History tab shows the new scan
     ref.listen(scanProvider, (previous, next) {
       if (next.status == ScanStatus.complete) {
+        ref.read(historyProvider.notifier).reload();
         context.go('/results');
       }
     });
